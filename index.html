@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宇宙発電シミュレーター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070b12; --bg2:#0d1320; --panel:#10182a; --panel2:#0b1120;
+    --line:#1d2a44; --line2:#28395c;
+    --ink:#dbe7ff; --dim:#7e8eb0; --faint:#536184;
+    --cyan:#3fe6c4; --cyan-dim:#1d6e62;
+    --amber:#f2b84b; --red:#ff5d6c; --green:#39e07a; --orange:#ff9e4a;
+    --glow-c:rgba(63,230,196,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New",sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;
+    background:radial-gradient(1200px 600px at 80% -10%, rgba(63,230,196,.07), transparent 60%),
+      radial-gradient(900px 500px at 10% 110%, rgba(242,184,75,.05), transparent 55%),
+      linear-gradient(180deg,var(--bg),var(--bg2));background-attachment:fixed}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;-webkit-mask-image:radial-gradient(circle at 50% 30%,#000,transparent 80%);
+    mask-image:radial-gradient(circle at 50% 30%,#000,transparent 80%);opacity:.12}
+  .wrap{max-width:760px;margin:0 auto;padding:26px 18px 60px;position:relative}
+
+  header{margin-bottom:18px}
+  .tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;
+    color:var(--amber);border:1px solid rgba(242,184,75,.4);border-radius:999px;padding:4px 11px;margin-bottom:14px}
+  h1{font-weight:900;font-size:clamp(20px,5.4vw,28px);line-height:1.25}
+  h1 .sm{display:block;font-size:.6em;font-weight:500;color:var(--cyan);margin-top:6px}
+  .lede{color:var(--dim);font-size:13.5px;line-height:1.7;margin-top:12px;max-width:60ch}
+
+  .synopsis{margin:18px 0;border:1px solid var(--line2);border-left:3px solid var(--cyan);border-radius:0 14px 14px 0;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));padding:18px 18px 16px;box-shadow:0 20px 50px -34px #000}
+  .synopsis h2{font-size:15px;font-weight:900;color:var(--ink);margin-bottom:6px}
+  .synopsis .sub{font-size:11px;color:var(--faint);letter-spacing:.08em;font-family:"IBM Plex Mono",monospace;margin-bottom:13px}
+  .synopsis p{font-size:13px;line-height:1.85;color:var(--ink);margin-bottom:11px}
+  .synopsis p:last-child{margin-bottom:0}
+  .synopsis b{color:var(--cyan);font-weight:700}
+  .synopsis .em{color:var(--amber);font-weight:700}
+  .synopsis .step-no{color:var(--cyan);font-family:"IBM Plex Mono",monospace;font-weight:600;margin-right:4px}
+
+  .guide{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+  .step{flex:1;min-width:150px;display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .step .num{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:#07101a;background:var(--cyan)}
+  .step .t{font-size:12.5px;color:var(--ink);line-height:1.35}
+  .step .t b{color:var(--cyan);font-weight:700}
+
+  .readout{margin:18px 0;border:1px solid var(--line2);border-radius:18px;overflow:hidden;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:0 30px 60px -30px #000, inset 0 1px 0 rgba(255,255,255,.03)}
+  .ro-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.012)}
+  .ro-label{font-size:12px;color:var(--faint);letter-spacing:.14em;font-family:"IBM Plex Mono",monospace}
+  .badge{font-size:14px;font-weight:700;padding:7px 14px;border-radius:999px;border:1px solid;white-space:nowrap;transition:.25s}
+  .badge.open{color:var(--green);border-color:rgba(57,224,122,.5);background:rgba(57,224,122,.08);box-shadow:0 0 22px -4px rgba(57,224,122,.5)}
+  .badge.closed{color:var(--red);border-color:rgba(255,93,108,.5);background:rgba(255,93,108,.07)}
+  .ro-main{padding:22px 18px 6px;text-align:center}
+  .qline{font-size:13px;color:var(--faint);margin-bottom:8px}
+  .power{font-family:"IBM Plex Mono",monospace;font-weight:600;line-height:1;font-size:clamp(40px,12vw,62px);transition:color .25s}
+  .power.pos{color:var(--cyan);text-shadow:0 0 38px var(--glow-c)}
+  .power.neg{color:var(--red)}
+  .power .u{font-size:.42em;color:var(--dim);margin-left:8px}
+  .verdict{margin:14px auto 4px;max-width:46ch;font-size:13.5px;line-height:1.65;color:var(--ink)}
+  .verdict.neg{color:#ffb3ba}
+  .ro-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);margin-top:14px}
+  .ro-cell{padding:13px 16px}
+  .ro-cell:first-child{border-right:1px solid var(--line)}
+  .ro-cell .k{font-size:10.5px;color:var(--faint);letter-spacing:.06em}
+  .ro-cell .v{font-size:14px;color:var(--ink);margin-top:4px;font-family:"IBM Plex Mono",monospace}
+
+  .sec-label{font-size:11.5px;color:var(--faint);letter-spacing:.1em;margin:18px 0 8px;font-family:"IBM Plex Mono",monospace}
+  .presets{display:flex;flex-wrap:wrap;gap:8px}
+  .preset{font-size:13px;font-weight:500;color:var(--ink);background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:9px 13px;cursor:pointer;transition:.18s}
+  .preset:hover,.preset:focus{border-color:var(--cyan);color:var(--cyan);outline:none}
+  .preset.warn:hover{border-color:var(--amber);color:var(--amber)}
+
+  .card{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,var(--panel),var(--panel2));padding:16px;margin:18px 0}
+  .card h2{font-size:14px;color:var(--ink);font-weight:700;margin-bottom:4px}
+  .card h2 .g{color:var(--green)} .card h2 .c{color:var(--cyan)} .card h2 .o{color:var(--orange)}
+  .card .hint{font-size:12px;color:var(--faint);margin-bottom:10px;line-height:1.5}
+  canvas{width:100%;height:210px;display:block}
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--dim);flex-wrap:wrap}
+  .legend i{display:inline-block;width:18px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .note{font-size:12.5px;color:var(--ink);line-height:1.65;margin-top:12px;padding:11px 13px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+  .note b{color:var(--cyan)}
+
+  .controls{display:grid;gap:14px}
+  .ctrl{border:1px solid var(--line);border-radius:14px;background:var(--panel2);padding:14px 16px}
+  .ctrl.key{border-color:var(--cyan-dim);box-shadow:0 0 0 1px rgba(63,230,196,.12) inset}
+  .ctrl-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:11px}
+  .ctrl-name{font-size:13.5px;font-weight:700;line-height:1.35}
+  .ctrl-name .star{color:var(--cyan);margin-right:4px}
+  .ctrl-name small{display:block;font-weight:400;color:var(--faint);font-size:11px;margin-top:3px}
+  .ctrl-val{font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--cyan);white-space:nowrap}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--cyan-dim),var(--line2));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--cyan);cursor:pointer;border:3px solid #07101a;box-shadow:0 0 14px -2px var(--glow-c)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--cyan);cursor:pointer;border:3px solid #07101a}
+
+  .caveat{margin-top:24px;border-left:2px solid var(--amber);padding:12px 16px;background:rgba(242,184,75,.04);border-radius:0 10px 10px 0;font-size:12.5px;color:var(--dim);line-height:1.7}
+  .caveat b{color:var(--amber);font-weight:700}
+  details{margin-top:10px} summary{cursor:pointer;color:var(--faint);font-size:12px;font-family:"IBM Plex Mono",monospace}
+  .formula{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--faint);margin-top:8px;overflow-x:auto;white-space:nowrap;padding-bottom:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="tag">TOY MODEL · 簡易モデル</span>
+    <h1>宇宙発電シミュレーター<span class="sm">冷たい天体の温度差から、どれだけ取り出せる？</span></h1>
+    <p class="lede">「冷たい天体のわずかな温度差から、AIで情報を制御して発電できるか」を試すアプリです。スライダーを動かすと、発電できるか／できないかと、その電力が数字で変わります。</p>
+  </header>
+
+  <section class="synopsis">
+    <h2>この装置は何をしているのか</h2>
+    <div class="sub">― あらすじ ―</div>
+    <p>この装置は、エネルギーを生み出す機械ではありません。<b>暖かい側と冷たい側のわずかな温度差</b>を燃料にして、そこから熱の流れを取り出す「熱機関」の一種です。燃料がなければ——温度差がゼロなら——何も取り出せません。これが大前提です。</p>
+    <p>ふつうの熱機関(タービンやカルノー機関)は、熱の流れが大きいときしか働けません。流れがゆらぎに埋もれるほど小さくなると、原理的に仕事を取り出せず、ゼロになります。本装置の眼目は、その<span class="em">「ゆらぎスケールの、ほとんど流れと呼べない微小な熱」</span>から、AIによる情報制御でエネルギーをすくい上げる点にあります。</p>
+    <p>仕組みは四つの段階です。<span class="step-no">①</span>第二種超伝導体の中では、磁場が<b>磁束量子</b>という最小単位に分かれ、一つひとつが確率的にランダムに揺らいでいます。<span class="step-no">②</span><b>選別AI</b>は、それぞれの磁束量子が<b>どちらに跳ぼうとしているかを観測</b>します。<span class="step-no">③</span>そして温度差の向きに沿う「都合のいい跳躍」だけを通し、逆向きは塞ぐ——この<b>整流(向きを揃えること)</b>が、選別AIの唯一の仕事です。<span class="em">選別AIはエネルギーを生みません。</span>ランダムな動きに門をつけ、通すか塞ぐかを選んでいるだけです。</p>
+    <p><span class="step-no">④</span>ただし、観測はタダではありません。観測した結果は情報として溜まり、それを消すのに最低 <b>k_B·T_c·ln2(ランダウアー限界)</b> のエネルギーがかかります。この消去コストは、冷たいほど小さくなります。</p>
+    <p>したがって、取り出せる量(温度差で決まる<b>得られるエネルギー</b>)が、情報を消す<b>コスト</b>(冷たさで決まる原理コスト＋回路の固定コスト)を上回ったときだけ、装置は<b>黒字</b>になります。その三条件——熱の流れが細く・限りなく冷たく・情報処理が理論限界に近い——が天然にそろうのは、トリトンや冥王星のような<span class="em">極寒の世界だけ</span>です。下のスライダーは、その黒字の境目を実際に動かして確かめるためのものです。</p>
+  </section>
+
+  <div class="guide">
+    <div class="step"><div class="num">1</div><div class="t"><b>天体を選ぶ</b>（下のボタン）</div></div>
+    <div class="step"><div class="num">2</div><div class="t"><b>「情報の処理コスト」</b>を左右に動かす</div></div>
+    <div class="step"><div class="num">3</div><div class="t">発電できる／できないが切り替わる</div></div>
+  </div>
+
+  <div class="readout">
+    <div class="ro-top"><span class="ro-label">発電できる？</span><span id="badge" class="badge open">✓ 発電できる</span></div>
+    <div class="ro-main">
+      <div class="qline">取り出せる電力（連続運転したとき）</div>
+      <div id="power" class="power pos">– <span class="u">W</span></div>
+      <div id="verdict" class="verdict"></div>
+    </div>
+    <div class="ro-grid">
+      <div class="ro-cell"><div class="k">身近なものと比べると</div><div class="v" id="cmpcell">–</div></div>
+      <div class="ro-cell"><div class="k">1回の動作で得るエネルギー</div><div class="v" id="wcell">– J</div></div>
+    </div>
+  </div>
+
+  <div class="sec-label">▸ 天体プリセット</div>
+  <div class="presets" id="presets">
+    <button class="preset" data-p="titan">タイタン</button>
+    <button class="preset" data-p="enceladus">エンケラドス</button>
+    <button class="preset" data-p="pluto">冥王星</button>
+    <button class="preset" data-p="triton">トリトン</button>
+    <button class="preset" data-p="ideal">理想（ランダウアー極限）</button>
+    <button class="preset" data-p="sfq">SFQ回路（≈10⁻¹⁹ J/bit）</button>
+    <button class="preset warn" data-p="real">いまの電子回路（CMOS ≈10⁻¹⁵ J/bit）</button>
+  </div>
+
+  <div class="card">
+    <h2>① 発電できる範囲（<span class="g">緑のところ</span>）</h2>
+    <div class="hint">横は「1回に処理する情報量」。曲線が真ん中の点線より上なら発電できます（黒字）。オレンジの縦線が、いまの設定の位置。</div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="card">
+    <h2>② <span class="o">カルノー機関</span> vs <span class="c">選別AI</span> ― なぜこの装置なのか</h2>
+    <div class="hint">横は「1回に流れる熱の大きさ」。左ほど小さい（ゆらぎスケール）、右ほど大きい（マクロ）。どちらの方式がより多く取り出せるかを比べます。</div>
+    <canvas id="chart2"></canvas>
+    <div class="legend">
+      <span><i style="background:var(--orange)"></i>カルノー機関（ふつうの熱機関・タービン）</span>
+      <span><i style="background:var(--cyan)"></i>選別AI（本研究の装置）</span>
+    </div>
+    <div class="note" id="carnotNote"></div>
+  </div>
+
+  <div class="sec-label">▸ パラメータ（動かしてみよう）</div>
+  <div class="controls" id="controls"></div>
+
+  <div class="caveat">
+    <b>これは簡易モデル（トイモデル）です。</b> 正確な発電量の予測ではなく、「どういう時に発電でき、どういう時にできないか」という構造を見るためのものです。
+    <details><summary>使っている式としくみ（タップで開く）</summary>
+      <div style="margin-top:8px;color:var(--dim);line-height:1.7">得られる側（得られるエネルギー）は温度差に比例し、情報量を増やすと頭打ちに。失う側（費用）は、情報を消す最低コスト（ランダウアー限界。冷たいほど小さい）＋回路の固定コスト。差し引きがプラスなら発電できます。②の対比では、カルノー機関は熱の流れがゆらぎ（k_B·T）より十分大きくないと原理的に働けない、という性質を入れています。</div>
+      <div class="formula">① W = ln2·ε·ΔT·N₀·(1−e^(−N/N₀)) − (k_B·T_c·ln2 + C_fix)·N,　P = W·k_B·f</div>
+      <div class="formula">② カルノー: η·Q·g(scale)（小さい流れで0に）／ 悪魔: η·Q −（情報コスト）　η=ΔT/T_h</div>
+    </details>
+    <details><summary>数値の根拠（実測値と仮定値の区別・出典）</summary>
+      <div style="margin-top:8px;color:var(--ink);line-height:1.75"><b style="color:var(--cyan)">実測値・物理定数として入れたもの（裏がある）：</b><br>
+      ・冷たい側の温度: トリトン 38K・冥王星 40K（Voyager 2 / Soderblom 1990）、タイタン 94K・エンケラドス 約75K<br>
+      ・情報を消す最低コスト k_B·T·ln2（Landauer 1961。冷たいほど小さい）<br>
+      ・磁束量子 Φ₀ = 2.07×10⁻¹⁵ Wb（NIST/CODATA）<br>
+      ・情報→仕事の変換効率 ε ≈ 0.28（Toyabe 2010 の実験値）<br>
+      ・動作周波数: 超伝導SFQ回路は数十GHz、最大770GHz実証<br>
+      ・1ビットあたり消費エネルギー: 現行CMOS ≈ 10⁻¹⁵ J、SFQ ≈ 10⁻¹⁹ J、ランダウアー極限 ≈ 10⁻²¹ J（300K）</div>
+      <div style="margin-top:10px;color:var(--amber);line-height:1.75"><b>モデル上の仮定値（現実の裏がない・要検証）：</b><br>
+      ・N₀ = 1500（得られるエネルギーが頭打ちになるビット数の便宜定数。物理的な対応物なし）<br>
+      ・各天体の温度差 ΔT（内部熱と表面温度の差として仮定したもの）<br>
+      ・1回に処理する情報量 N（操作用パラメータ）</div>
+    </details>
+  </div>
+</div>
+
+<script>
+const kB=1.380649e-23, LN2=Math.log(2), N0=1500;
+const S={ dT:230, Tc:40, N:1000, logC:-1, eps:0.28, logF:10.7 };
+
+const defs=[
+  {key:'dT',name:'温度差',sub:'熱い側 − 冷たい側。大きいほど取り出せる',min:0,max:300,step:1,unit:'K'},
+  {key:'Tc',name:'冷たい側の温度',sub:'低いほど有利（情報を消すコストが下がる）',min:20,max:300,step:1,unit:'K'},
+  {key:'N',name:'1回に処理する情報量',sub:'ビット数。多すぎるとコスト負けして赤字に',min:1,max:4000,step:1,unit:'bit'},
+  {key:'logC',name:'情報の処理コスト',sub:'情報1個を扱う電力。小さいほど扉が開く',min:-1,max:8,step:0.05,unit:'',special:true,star:true},
+  {key:'eps',name:'情報→仕事の変換効率',sub:'実測値 ≈ 0.28（Toyabe 2010 の実験）',min:0.1,max:1,step:0.01,unit:''},
+  {key:'logF',name:'1秒あたりの動作回数',sub:'周波数。超伝導SFQ回路は数十GHz（最大770GHz実証）',min:3,max:12,step:0.1,unit:'Hz',special:'freq'},
+];
+const presets={
+  titan:{dT:180,Tc:94,N:1000,logC:-1,eps:0.28,logF:10.7}, enceladus:{dT:198,Tc:75,N:1000,logC:-1,eps:0.28,logF:10.7},
+  pluto:{dT:230,Tc:40,N:1000,logC:-1,eps:0.28,logF:10.7}, triton:{dT:232,Tc:38,N:900,logC:-1,eps:0.28,logF:10.7},
+  ideal:{logC:-1}, sfq:{logC:3.86}, real:{logC:7.86},
+};
+function Cfix(){ return S.logC<=-0.999?0:Math.pow(10,S.logC); }
+function freq(){ return Math.pow(10,S.logF); }
+function netWork(dT,Tc,N,cf,eps){ return LN2*eps*dT*N0*(1-Math.exp(-N/N0))-(Tc*LN2+cf)*N; }
+
+function fmtPower(P){ const a=Math.abs(P); if(a===0)return{n:'0',u:'W'};
+  const u=[['W',1],['mW',1e-3],['µW',1e-6],['nW',1e-9],['pW',1e-12],['fW',1e-15],['aW',1e-18],['zW',1e-21]];
+  for(const[x,s]of u){ if(a>=s){const v=P/s;return{n:(Math.abs(v)>=100?v.toFixed(0):Math.abs(v)>=10?v.toFixed(1):v.toFixed(2)),u:x};} }
+  return{n:P.toExponential(2),u:'W'}; }
+function sci(x){ if(x===0)return'0'; const e=Math.floor(Math.log10(Math.abs(x))),m=x/Math.pow(10,e); return m.toFixed(2)+'×10'+sup(e); }
+function sup(n){ const m={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'}; return String(n).split('').map(c=>m[c]||c).join(''); }
+function bigJP(x){ if(x>=1e16)return(x/1e16).toFixed(1)+'京'; if(x>=1e12)return(x/1e12).toFixed(x>=1e13?0:1)+'兆';
+  if(x>=1e8)return(x/1e8).toFixed(x>=1e9?0:1)+'億'; if(x>=1e4)return(x/1e4).toFixed(x>=1e5?0:1)+'万'; return Math.round(x).toLocaleString('ja'); }
+function comparison(P){ const ref=1; // スマホ ≈ 1W
+  if(P>=ref)return'スマホ（約1W）の約 '+(P/ref).toFixed(1)+' 倍';
+  return'スマホ（約1W）の約 '+bigJP(ref/P)+'分の1'; }
+function valLabel(d){ if(d.special===true){const c=Cfix();return c===0?'0（理想）':sci(c)+' k_B·K';}
+  if(d.special==='freq')return sci(freq())+' Hz'; if(d.key==='eps')return Math.round(S.eps*100)+' %'; return S[d.key]+' '+d.unit; }
+
+const cont=document.getElementById('controls');
+defs.forEach(d=>{ const el=document.createElement('div'); el.className='ctrl'+(d.star?' key':'');
+  el.innerHTML=`<div class="ctrl-top"><div class="ctrl-name">${d.star?'<span class="star">★</span>':''}${d.name}<small>${d.sub}</small></div><div class="ctrl-val" id="val-${d.key}"></div></div><input type="range" id="rng-${d.key}" min="${d.min}" max="${d.max}" step="${d.step}" value="${S[d.key]}">`;
+  cont.appendChild(el); el.querySelector('input').addEventListener('input',e=>{S[d.key]=parseFloat(e.target.value);render();}); });
+document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>{Object.assign(S,presets[b.dataset.p]);syncInputs();render();}));
+function syncInputs(){ defs.forEach(d=>{const r=document.getElementById('rng-'+d.key);if(r)r.value=S[d.key];}); }
+
+// chart 1: door over N
+const cv=document.getElementById('chart'),cx=cv.getContext('2d');
+function drawDoor(){ const dpr=devicePixelRatio||1,w=cv.clientWidth,h=210; cv.width=w*dpr;cv.height=h*dpr;cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,w,h);
+  const pad={l:10,r:10,t:22,b:20},Nmax=4000,cf=Cfix(); let pts=[],ymin=0,ymax=0;
+  for(let i=0;i<=160;i++){const n=i/160*Nmax,y=netWork(S.dT,S.Tc,n,cf,S.eps);pts.push([n,y]);if(y<ymin)ymin=y;if(y>ymax)ymax=y;}
+  if(ymax===ymin){ymax=1;ymin=-1;} const p=(ymax-ymin)*0.14;ymin-=p;ymax+=p;
+  const X=n=>pad.l+(n/Nmax)*(w-pad.l-pad.r),Y=y=>pad.t+(1-(y-ymin)/(ymax-ymin))*(h-pad.t-pad.b);
+  cx.fillStyle='rgba(57,224,122,.10)';
+  for(let i=0;i<pts.length-1;i++){const[n1,y1]=pts[i],[n2,y2]=pts[i+1];if(y1>0||y2>0){const x1=X(n1),x2=X(n2),y0=Y(0);cx.beginPath();cx.moveTo(x1,y0);cx.lineTo(x1,Y(Math.max(y1,0)));cx.lineTo(x2,Y(Math.max(y2,0)));cx.lineTo(x2,y0);cx.closePath();cx.fill();}}
+  cx.strokeStyle='#33446b';cx.lineWidth=1;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(pad.l,Y(0));cx.lineTo(w-pad.r,Y(0));cx.stroke();cx.setLineDash([]);
+  cx.fillStyle='#5a6f93';cx.font='10px "IBM Plex Mono",monospace';cx.textAlign='left';cx.fillText('↑ ここから上＝発電できる',pad.l+2,Y(0)-6);
+  cx.strokeStyle='#3fe6c4';cx.lineWidth=2.2;cx.beginPath();pts.forEach(([n,y],i)=>{const px=X(n),py=Y(y);i?cx.lineTo(px,py):cx.moveTo(px,py);});cx.stroke();
+  const mx=X(S.N),my=Y(netWork(S.dT,S.Tc,S.N,cf,S.eps));
+  cx.strokeStyle='rgba(242,184,75,.7)';cx.lineWidth=1;cx.beginPath();cx.moveTo(mx,pad.t);cx.lineTo(mx,h-pad.b);cx.stroke();
+  cx.fillStyle='#f2b84b';cx.beginPath();cx.arc(mx,my,4.5,0,7);cx.fill();
+  cx.fillStyle='#536184';cx.font='10px "IBM Plex Mono",monospace';cx.fillText('情報量 少',pad.l,h-5);cx.textAlign='right';cx.fillText('多',w-pad.r,h-5);cx.textAlign='left';
+}
+
+// chart 2: Carnot vs Demon over heat-flow scale
+const cv2=document.getElementById('chart2'),c2=cv2.getContext('2d');
+const sMin=-1.5,sMax=6;
+function carnotW(s,Th,eta){ const Q=Th*Math.pow(10,s); const g=1/(1+Math.exp(-(s-1)/0.6)); return eta*Q*g; }
+function demonW(s,Th,eta,Cinfo){ const Q=Th*Math.pow(10,s); return eta*Q-Cinfo; }
+function drawCarnot(){ const dpr=devicePixelRatio||1,w=cv2.clientWidth,h=210; cv2.width=w*dpr;cv2.height=h*dpr;c2.setTransform(dpr,0,0,dpr,0,0);c2.clearRect(0,0,w,h);
+  const pad={l:10,r:10,t:14,b:30}; const Th=S.Tc+S.dT,eta=S.dT/Th,Cinfo=S.Tc*LN2+Cfix();
+  let maxW=1; for(let i=0;i<=200;i++){const s=sMin+(sMax-sMin)*i/200;maxW=Math.max(maxW,carnotW(s,Th,eta),demonW(s,Th,eta,Cinfo));}
+  const yTop=Math.log10(maxW)+0.3, yBot=0;
+  const X=s=>pad.l+((s-sMin)/(sMax-sMin))*(w-pad.l-pad.r);
+  const Y=lw=>pad.t+(1-(lw-yBot)/(yTop-yBot))*(h-pad.t-pad.b);
+  let bandStart=null;
+  for(let i=0;i<=200;i++){ const s=sMin+(sMax-sMin)*i/200; const cwin=carnotW(s,Th,eta)>1, dwin=demonW(s,Th,eta,Cinfo)>1;
+    const niche = dwin && !cwin;
+    if(niche&&bandStart===null) bandStart=s; if((!niche||i===200)&&bandStart!==null){ const x1=X(bandStart),x2=X(s); c2.fillStyle='rgba(57,224,122,.12)'; c2.fillRect(x1,pad.t,x2-x1,h-pad.t-pad.b); bandStart=null; } }
+  function curve(fn,color){ c2.strokeStyle=color;c2.lineWidth=2.2;c2.beginPath();let started=false;
+    for(let i=0;i<=200;i++){ const s=sMin+(sMax-sMin)*i/200,v=fn(s); if(v>1){const px=X(s),py=Y(Math.log10(v)); if(!started){c2.moveTo(px,py);started=true;}else c2.lineTo(px,py);} else started=false; } c2.stroke(); }
+  curve(s=>carnotW(s,Th,eta),'#ff9e4a');
+  curve(s=>demonW(s,Th,eta,Cinfo),'#3fe6c4');
+  c2.fillStyle='#536184';c2.font='10px "IBM Plex Mono",monospace';c2.textAlign='left';
+  c2.fillText('小（ゆらぎスケール）',pad.l,h-6); c2.textAlign='right'; c2.fillText('大（マクロ）',w-pad.r,h-6); c2.textAlign='left';
+  c2.fillStyle='#5a6f93'; c2.fillText('↑取り出せる量（対数）',pad.l+2,pad.t+10);
+}
+
+function render(){
+  defs.forEach(d=>{document.getElementById('val-'+d.key).textContent=valLabel(d);});
+  const cf=Cfix(),w=netWork(S.dT,S.Tc,S.N,cf,S.eps),EJ=w*kB,P=EJ*freq(),open=w>0;
+  const badge=document.getElementById('badge');badge.className='badge '+(open?'open':'closed');badge.textContent=open?'✓ 発電できる':'✕ 発電できない';
+  const pe=document.getElementById('power'),f=fmtPower(P);pe.className='power '+(open?'pos':'neg');pe.innerHTML=(P<0?'−':'')+f.n+' <span class="u">'+f.u+'</span>';
+  const vd=document.getElementById('verdict');
+  if(open){vd.className='verdict';vd.textContent='温度差から取り出した分が、情報を処理するコストを上回りました。ごくわずかですが、発電できます。';document.getElementById('cmpcell').textContent=comparison(P);}
+  else{vd.className='verdict neg';vd.textContent='情報を処理する電力のほうが大きく、発電できません。これが研究で突き当たった「最後の壁」です。';document.getElementById('cmpcell').textContent='— （発電できない）';}
+  document.getElementById('wcell').textContent=sci(EJ)+' J';
+  drawDoor(); drawCarnot();
+  const Th=S.Tc+S.dT,eta=S.dT/Th,Cinfo=S.Tc*LN2+Cfix(); let niche=false;
+  for(let i=0;i<=200;i++){const s=sMin+(sMax-sMin)*i/200; if(demonW(s,Th,eta,Cinfo)>10 && carnotW(s,Th,eta)<1){niche=true;break;}}
+  const note=document.getElementById('carnotNote');
+  if(niche) note.innerHTML='右側（熱の流れが大きい）では、ふつうの<b style="color:var(--orange)">タービンやカルノー機関</b>のほうが得です。でも左側の<b>ゆらぎスケール</b>では、カルノー機関は原理的にゼロ。そこを拾えるのが<b>選別AI</b>です。― <b>この装置の意義は、左側のわずかな流れにあります。</b>';
+  else note.innerHTML='いまの「情報の処理コスト」では、<b style="color:var(--red)">選別AIが勝てる範囲がありません</b>。コストが大きすぎて、ゆらぎスケールでも赤字になるからです（＝最後の壁）。コストを下げると、左側に選別AIだけの領域（緑）が現れます。';
+}
+syncInputs(); render();
+addEventListener('resize',()=>{drawDoor();drawCarnot();});
+</script>
+</body>
+</html>
